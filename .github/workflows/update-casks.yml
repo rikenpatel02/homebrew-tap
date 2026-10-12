@@ -15,21 +15,30 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Update NotchBar
+      - name: Update casks
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG=$(gh release view --repo rikenpatel02/notchbar --json tagName --jq .tagName)
-          VERSION="${TAG#v}"
-          CURRENT=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/notchbar.rb)
-          if [[ "$VERSION" == "$CURRENT" ]]; then
-            echo "NotchBar is up to date ($VERSION)"
-            exit 0
-          fi
-          SHA=$(curl -fsSL "https://github.com/rikenpatel02/notchbar/releases/download/$TAG/NotchBar-$VERSION.dmg.sha256" | awk '{print $1}')
-          [[ ${#SHA} -eq 64 ]] || { echo "::error::No checksum for $TAG"; exit 1; }
-          sed -i -e "s/^  version \".*\"/  version \"$VERSION\"/" -e "s/^  sha256 \".*\"/  sha256 \"$SHA\"/" Casks/notchbar.rb
+          # cask  repository  DMG name prefix
+          update() {
+            local cask="$1" repo="$2" prefix="$3" file="Casks/$1.rb"
+            local tag version current sha
+            tag=$(gh release view --repo "$repo" --json tagName --jq .tagName)
+            version="${tag#v}"
+            current=$(sed -n 's/^  version "\(.*\)"/\1/p' "$file")
+            if [[ "$version" == "$current" ]]; then
+              echo "$cask is up to date ($version)"
+              return
+            fi
+            sha=$(curl -fsSL "https://github.com/$repo/releases/download/$tag/$prefix-$version.dmg.sha256" | awk '{print $1}')
+            [[ ${#sha} -eq 64 ]] || { echo "::error::No checksum for $repo $tag"; return 1; }
+            sed -i -e "s/^  version \".*\"/  version \"$version\"/" -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" "$file"
+            git add "$file"
+            git commit -m "$cask $version"
+          }
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "notchbar $VERSION"
+          update notchbar rikenpatel02/notchbar NotchBar
+          update shotshelf rikenpatel02/shotshelf Shotshelf
           git push
