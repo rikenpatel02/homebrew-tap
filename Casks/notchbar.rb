@@ -1,6 +1,6 @@
 cask "notchbar" do
-  version "0.1.3"
-  sha256 "2a118f77ca4009229ea7bcc2fefb074cd0b42b2a06b7975c48fb360e1848e20d"
+  version "0.1.4"
+  sha256 "04c1310319a3245702fef29f657231f0b1f45a15780cecfda1193f469ed02d76"
 
   url "https://github.com/rikenpatel02/notchbar/releases/download/v#{version}/NotchBar-#{version}.dmg"
   name "NotchBar"
